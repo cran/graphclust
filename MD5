@@ -1,11 +1,11 @@
-81e06cbff81d40dc1430eab6d59a09be *DESCRIPTION
+4b66892eacd6c613e519d679b616e685 *DESCRIPTION
 d6818ae04f990a2c8a89d6b7bb34c773 *NAMESPACE
 a7f3d19c2318ccfbfb74eea6431b074f *R/ARI.R
 c9d6076e36e37c9f63538c7895c487a1 *R/countStat.R
 3baf7fdef517fcf096223cb0e509af35 *R/estimParam.R
 26e0eb20dececc669f26c76efd8ea332 *R/generation.R
 a28b9d12b48912bd2e2860a79a48a78c *R/graphClustering.R
-ad02089ddf61fb5675a1617051ffb67a *R/graphonSpectralClustering.R
+86fbf96c55d8dc5a80e62f53be449cb1 *R/graphonSpectralClustering.R
 b8070df89355e534af075849cb9a8378 *R/iclCriterion.R
 d8b29ccfed272ff464d19fc021d1d83c *R/iclMaximization.R
 3881c5cc9ca98005a3c5bcd0a805c8e9 *R/matchBlocks.R
@@ -16,7 +16,7 @@ d8b29ccfed272ff464d19fc021d1d83c *R/iclMaximization.R
 83af58c81c80cef0238ff045f45b7ea6 *man/fitSimpleSBM.Rd
 92573ce8600ecadff2c3162e18413d42 *man/graphClustering.Rd
 beec5f73f724eccd87e350e0a23ef2b3 *man/graphonL2norm.Rd
-559c975c122d6a1006d2c0940539bfa1 *man/graphonSpectralClustering.Rd
+b54f41b3a4d55002258c5af618e6be59 *man/graphonSpectralClustering.Rd
 f253f83534faa4896effac5bc9324c32 *man/metagraph.Rd
 eeb73b85bdc92c5cdcacb707f98b0b19 *man/permutParam.Rd
 e2587fdeb5871188dcab92ee2e12c65d *man/plotDendrogram.Rd

@@ -4,12 +4,19 @@
 \alias{graphonSpectralClustering}
 \title{Graph clustering using the pairwise graphon distances and spectral clustering}
 \usage{
-graphonSpectralClustering(allAdj, nbClusters, nbCores = detectCores())
+graphonSpectralClustering(
+  allAdj,
+  nbClusters,
+  sig = 0.1,
+  nbCores = detectCores()
+)
 }
 \arguments{
 \item{allAdj}{list of adjacency matrices}
 
 \item{nbClusters}{number of clusters to be found}
+
+\item{sig}{parameter for Gaussian kernel used for the similarity matrix}
 
 \item{nbCores}{number of cores for parallelization. Default: detectCores().}
 }

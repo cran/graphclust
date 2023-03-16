@@ -6,7 +6,7 @@ Authors@R:
 Package: graphclust
 Type: Package
 Title: Hierarchical Graph Clustering for a Collection of Networks
-Version: 1.0.1
+Version: 1.0.2
 Author: Tabea Rebafka [aut, cre]
 Maintainer: Tabea Rebafka <tabea.rebafka@sorbonne-universite.fr>
 Description: Graph clustering using an agglomerative algorithm to maximize the
@@ -19,6 +19,6 @@ Encoding: UTF-8
 Imports: blockmodels, igraph, parallel, sClust
 RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2023-01-11 10:06:25 UTC; tabea
+Packaged: 2023-03-16 13:33:34 UTC; tabea
 Repository: CRAN
-Date/Publication: 2023-01-12 18:30:05 UTC
+Date/Publication: 2023-03-16 13:50:02 UTC
