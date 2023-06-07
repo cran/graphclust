@@ -5,7 +5,13 @@
 #'
 #' @param allAdj list of adjacency matrices
 #' @param hyperParam hyperparameters of prior distributions
-#' @param nbCores number of cores for parallelization. Default detectCores().
+#' @param nbCores number of cores for parallelization
+#' @param returnInitial Boolean. Return SBM parameters from initialization or not. Default is FALSE.
+#' @param nbClust desired number of clusters. Default NULL, which means that the
+#' number of clusters is chosen automatically via the ICL criterion
+#' @param nbSBMBlocks upper bound for the number of blocks in the SBMs of the mixture components. Default is Inf
+#' @param initCountStat initial count statistics may be provided to the method. Default is NULL.
+#' @param initDeltaICL initial deltaICL-matrix may be provided to the method. Default is NULL.
 #'
 #' @return list with the following fields: $graphGroups is the graph clustering,
 #' $nodeClusterings is a list with the node labels for each networks,
@@ -21,23 +27,42 @@
 #' obs <- rCollectSBM(rep(10,4), theta)$listGraphs
 #' res <- graphClustering(obs, nbCores=1)
 graphClustering <- function(allAdj,
-      hyperParam = list(alpha = .5, eta = .5, zeta = .5, lambda = 0.5),
-      nbCores=detectCores()){
+                            hyperParam = list(alpha = .5, eta = .5, zeta = .5, lambda = 0.5),
+                            returnInitial = FALSE, nbClust = NULL, nbSBMBlocks = Inf,
+                            initCountStat = NULL, initDeltaICL = NULL,
+                            nbCores=1){
   directed <- TRUE
   M <- length(allAdj)
   if (M<2){
     return(warning("There are not enough networks. At least two networks are required for clustering."))
   }
 
-  exploreSplit <- rep(c(FALSE,TRUE), M)
+  # exploreSplit <- rep(c(FALSE, (nbSBMBlocks==Inf)), M)
+  exploreSplit <- rep(c(FALSE, TRUE), M)
   nbExploreSplit <- 1
 
   # initialiaztion
   message("initialization of individual SBMs...\n")
-  countStat <- fitSimpleSBM(allAdj, directed, nbCores=nbCores)
-  message("initialization of DelatICL...\n")
-  deltaICLmatrix <- getAllDeltaICL(allAdj, countStat, hyperParam)
+  if (is.null(initCountStat)){
+    countStat <- fitSimpleSBM(allAdj, directed, nbSBMBlocks, nbCores=nbCores)
+  }else{
+    countStat <- initCountStat
+  }
+  if (returnInitial){
+    initCountStat <- countStat
+    initTheta <- estimMAPmixSBM(allAdj, graphGroups = 1:M, initCountStat,
+                                hyperParam, directed=TRUE)
 
+  }
+  message("initialization of DelatICL...\n")
+  if(is.null(initDeltaICL)){
+    deltaICLmatrix <- getAllDeltaICL(allAdj, countStat, hyperParam)
+  }else{
+    deltaICLmatrix <- initDeltaICL
+  }
+  if (returnInitial){
+    initDeltaICLmatrix <- deltaICLmatrix
+  }
   message("clustering algorithm...\n")
   graphGroups <- 1:M
   it <- 0
@@ -47,12 +72,16 @@ graphClustering <- function(allAdj,
   saveDeltaICL <- NULL
 
   stopCrit <- FALSE
+  if (!is.null(nbClust))
+    if (nbClust >= M)
+      stopCrit <- TRUE
+
   while (!stopCrit){
     it <- it + 1
     # best merge from deltaICLmatrix (if it still increases ICL)
     maxDeltICL <- max(deltaICLmatrix, na.rm=TRUE)
     penaltyTerm <- globalPenalty(hyperParam$lambda, M, L)
-    if(maxDeltICL > -penaltyTerm){
+    if( (!is.null(nbClust)) | ((maxDeltICL > -penaltyTerm) & (is.null(nbClust))) ){
       ind_ml <- which(deltaICLmatrix == maxDeltICL, arr.ind=TRUE)
       twoGroups <- range(as.numeric(rownames(deltaICLmatrix)[ind_ml]))
       saveFusedClusters[[it]] <- twoGroups
@@ -75,7 +104,8 @@ graphClustering <- function(allAdj,
       graphGroups[ind2] <- labelGraphGroup
       saveGraphGroups[[it]] <- graphGroups
 
-      if(exploreSplit[it]){
+      currentNbBlocks <- max(sapply(resMerge$countStat1$S, length))
+      if(exploreSplit[it]&(currentNbBlocks<nbSBMBlocks)){
         ind <- rep(1:M, 2)[c(ind1, ind2)]
         for (rep in 1:nbExploreSplit){
           newCountStat <- splitBlock(allAdj[ind],
@@ -91,10 +121,19 @@ graphClustering <- function(allAdj,
       if (L>2){
         deltaICLmatrix <- updateDeltaICLmatrix(deltaICLmatrix, allAdj, countStat, ind_ml, graphGroups, hyperParam)
         L <- nrow(deltaICLmatrix)
-        penaltyTerm <- globalPenalty(hyperParam$lambda, M, L)
-        stopCrit <- (sum(deltaICLmatrix>0, na.rm=TRUE)==0)
+        if (is.null(nbClust)){
+          # stopCrit <- (sum(deltaICLmatrix>0, na.rm=TRUE)==0)
+          penaltyTerm <- globalPenalty(hyperParam$lambda, M, L)
+          stopCrit <- (sum(deltaICLmatrix>-penaltyTerm, na.rm=TRUE)==0)
+        }else{
+          stopCrit <- (length(unique(graphGroups))==nbClust)
+        }
       }else{
-        stopCrit <- TRUE
+        if (is.null(nbClust)){
+          stopCrit <- TRUE
+        }else{
+          stopCrit <- (length(unique(graphGroups))==nbClust)
+        }
       }
 
     }
@@ -115,6 +154,12 @@ graphClustering <- function(allAdj,
               histFusedClusters = saveFusedClusters
   )
 
+  if (returnInitial){
+    res$initCountStat <- initCountStat
+    res$initTheta <- initTheta
+    res$initDeltaICL <- initDeltaICLmatrix
+  }
+
   return(res)
 }
 
@@ -129,7 +174,7 @@ graphClustering <- function(allAdj,
 
 #' @param allAdj list of adjacency matrices
 #' @param hyperParam hyperparameters of prior distributions
-#' @param nbCores number of cores for parallelization. Default: detectCores().
+#' @param nbCores number of cores for parallelization
 #'
 #' @return list with the following fields:
 #' $nodeClusterings is a list with the node labels for each networks,
@@ -143,7 +188,7 @@ graphClustering <- function(allAdj,
 #' res <- fitSBMcollection(obs, nbCores=1)
 fitSBMcollection <- function(allAdj,
                                  hyperParam = list(alpha = .5, eta = .5, zeta = .5, lambda = 0.5),
-                                 nbCores=detectCores()){
+                                 nbCores=1){
   directed <- TRUE
   M <- length(allAdj)
   exploreSplit <- rep(c(FALSE,TRUE), M)#TRUE# FALSE  # for mixture model: splits increase ICL and diminish the number of graph clusters

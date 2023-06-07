@@ -7,7 +7,12 @@
 graphClustering(
   allAdj,
   hyperParam = list(alpha = 0.5, eta = 0.5, zeta = 0.5, lambda = 0.5),
-  nbCores = detectCores()
+  returnInitial = FALSE,
+  nbClust = NULL,
+  nbSBMBlocks = Inf,
+  initCountStat = NULL,
+  initDeltaICL = NULL,
+  nbCores = 1
 )
 }
 \arguments{
@@ -15,7 +20,18 @@ graphClustering(
 
 \item{hyperParam}{hyperparameters of prior distributions}
 
-\item{nbCores}{number of cores for parallelization. Default detectCores().}
+\item{returnInitial}{Boolean. Return SBM parameters from initialization or not. Default is FALSE.}
+
+\item{nbClust}{desired number of clusters. Default NULL, which means that the
+number of clusters is chosen automatically via the ICL criterion}
+
+\item{nbSBMBlocks}{upper bound for the number of blocks in the SBMs of the mixture components. Default is Inf}
+
+\item{initCountStat}{initial count statistics may be provided to the method. Default is NULL.}
+
+\item{initDeltaICL}{initial deltaICL-matrix may be provided to the method. Default is NULL.}
+
+\item{nbCores}{number of cores for parallelization}
 }
 \value{
 list with the following fields: $graphGroups is the graph clustering,

@@ -7,7 +7,8 @@
 fitSimpleSBM(
   allAdj,
   directed = TRUE,
-  nbCores = detectCores(),
+  nbSBMBlocks = Inf,
+  nbCores = 1,
   outCountStat = TRUE
 )
 }
@@ -16,7 +17,9 @@ fitSimpleSBM(
 
 \item{directed}{Networks are directed (TRUE by default) or undirected (FALSE).}
 
-\item{nbCores}{number of cores for parallelization. Default: detectCores().}
+\item{nbSBMBlocks}{upper bound for the number of blocks in the SBMs of the mixture components. Default is Inf}
+
+\item{nbCores}{number of cores for parallelization.}
 
 \item{outCountStat}{If TRUE (default), the output is a list of count
 statistics for every network. If FALSE, the output is a list of parameters of

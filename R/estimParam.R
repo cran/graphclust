@@ -75,10 +75,11 @@ estimMAPmixSBM <- function(listAdj, graphGroups, countStat, hyperParam,
 #'
 #' @param allAdj list of adjacency matrices
 #' @param directed Networks are directed (TRUE by default) or undirected (FALSE).
-#' @param nbCores number of cores for parallelization. Default: detectCores().
+#' @param nbCores number of cores for parallelization.
 #' @param outCountStat If TRUE (default), the output is a list of count
 #' statistics for every network. If FALSE, the output is a list of parameters of
 #' the stochastic block models fitted to every network.
+#' @param nbSBMBlocks upper bound for the number of blocks in the SBMs of the mixture components. Default is Inf
 #'
 #' @return list of count statistics for every network or list of parameters of
 #' the stochastic block models fitted to every network.
@@ -88,12 +89,12 @@ estimMAPmixSBM <- function(listAdj, graphGroups, countStat, hyperParam,
 #' theta <- list(pi=c(.5,.5), gamma=matrix((1:4)/8,2,2))
 #' obs <- rCollectSBM(rep(10,4), theta)$listGraphs
 #' res <- fitSimpleSBM(obs, outCountStat=FALSE, nbCores=2)
-fitSimpleSBM <- function (allAdj, directed=TRUE, nbCores=detectCores(), outCountStat=TRUE){
+fitSimpleSBM <- function(allAdj, directed=TRUE, nbSBMBlocks=Inf, nbCores=1, outCountStat=TRUE){
   M <- length(allAdj)
   if ((nbCores==1) | (M < 10)){
-    res <- fitSimpleSBM_sequential(allAdj, directed, outCountStat, nbCores=nbCores)
+    res <- fitSimpleSBM_sequential(allAdj, directed, nbSBMBlocks, outCountStat, nbCores=nbCores)
   }else{
-    res <- fitSimpleSBM_parallel(allAdj, nbCores, directed, outCountStat)
+    res <- fitSimpleSBM_parallel(allAdj, nbCores, nbSBMBlocks, directed, outCountStat)
   }
   return(res)
 }
@@ -102,17 +103,20 @@ fitSimpleSBM <- function (allAdj, directed=TRUE, nbCores=detectCores(), outCount
 #' Fit a stochastic block model to every network in a collection of networks without parallelization.
 #'
 #' @noRd
+#'
 #' @param allAdj list of adjacency matrices
 #' @param directed Networks are directed (TRUE by default) or undirected (FALSE).
 #' @param outCountStat If TRUE (default), the output is a list of count
 #' statistics for every network. If FALSE, the output is a list of parameters of
 #' the stochastic block models fitted to every network.
 #' @param silent If FALSE (default), prints a message when the computation starts.
+#' @param nbSBMBlocks upper bound for the number of blocks in the SBMs of the mixture components. Default is Inf
+#' @param nbCores
 #'
 #' @return list of count statistics for every network or list of parameters of
 #' the stochastic block models fitted to every network.
 #' @importFrom blockmodels BM_bernoulli
-fitSimpleSBM_sequential <- function (allAdj, directed=TRUE, outCountStat=TRUE, silent=FALSE, nbCores){
+fitSimpleSBM_sequential <- function (allAdj, directed=TRUE, nbSBMBlocks=Inf, outCountStat=TRUE, silent=FALSE, nbCores){
   M <- length(allAdj)
   clustering <- vector("list", M)
   if (!outCountStat)
@@ -122,13 +126,14 @@ fitSimpleSBM_sequential <- function (allAdj, directed=TRUE, outCountStat=TRUE, s
       message("initialization of network", m)
     }
     if (directed){
-      myModel <- BM_bernoulli("SBM", allAdj[[m]], verbosity=0, plotting='', ncores=nbCores)
+      myModel <- BM_bernoulli("SBM", allAdj[[m]], verbosity=0, plotting='', explore_max=nbSBMBlocks, ncores=nbCores)
     }
     else{
-      myModel <- BM_bernoulli("SBM_sym", allAdj[[m]], verbosity=0, plotting='', ncores=nbCores)
+      myModel <- BM_bernoulli("SBM_sym", allAdj[[m]], verbosity=0, plotting='', explore_max=nbSBMBlocks, ncores=nbCores)
     }
     myModel$estimate()
-    selectedModel <- which.max(myModel$ICL) + 1
+    selectedModel <- if (nbSBMBlocks==Inf) which.max(myModel$ICL) + 1 else min(c(which.max(myModel$ICL), nbSBMBlocks))
+    # selectedModel <- which.max(myModel$ICL)
 
     theta <- list(
       pi = colMeans(myModel$memberships[[selectedModel]]$Z),
@@ -176,11 +181,12 @@ fitSimpleSBM_sequential <- function (allAdj, directed=TRUE, outCountStat=TRUE, s
 #' @param outCountStat If TRUE (default), the output is a list of count
 #' statistics for every network. If FALSE, the output is a list of parameters of
 #' the stochastic block models fitted to every network.
+#' @param nbSBMBlocks upper bound for the number of blocks in the SBMs of the mixture components. Default is Inf
 #'
 #' @return list of count statistics for every network or list of parameters of
 #' the stochastic block models fitted to every network.
 #' @importFrom parallel mclapply detectCores
-fitSimpleSBM_parallel <- function (allAdj, nbCores=2, directed=TRUE, outCountStat=TRUE){
+fitSimpleSBM_parallel <- function (allAdj, nbCores=2, directed=TRUE, nbSBMBlocks=Inf, outCountStat=TRUE){
   M <- length(allAdj)
   nbCores <- min(c(ceiling(M/10), nbCores))
   Mpart <- ceiling(M/nbCores)
@@ -194,7 +200,7 @@ fitSimpleSBM_parallel <- function (allAdj, nbCores=2, directed=TRUE, outCountSta
 
   res_parallel <- mclapply(init.values,
                            function(el){
-                             fitSimpleSBM_sequential(allAdj = el, directed, outCountStat, silent=TRUE, nbCores=nbCores)
+                             fitSimpleSBM_sequential(allAdj = el, directed, nbSBMBlocks, outCountStat, silent=TRUE, nbCores=nbCores)
                            },
                            mc.cores = nbCores
   )

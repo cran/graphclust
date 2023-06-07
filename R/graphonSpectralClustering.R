@@ -1,12 +1,9 @@
-# 30/11/2022
-# graphon based clustering
-
 
 #' Graph clustering using the pairwise graphon distances and spectral clustering
 #'
 #' @param allAdj list of adjacency matrices
 #' @param nbClusters number of clusters to be found
-#' @param nbCores number of cores for parallelization. Default: detectCores().
+#' @param nbCores number of cores for parallelization.
 #' @param sig parameter for Gaussian kernel used for the similarity matrix
 #'
 #' @return list with the obtained graph clusteirng ($clust) and the matrix with the
@@ -17,7 +14,7 @@
 #' theta <- list(pi=c(.5,.5), gamma=matrix((1:4)/8,2,2))
 #' obs <- rCollectSBM(rep(10,4), theta)$listGraphs
 #' res <- graphonSpectralClustering(obs, 2, nbCores=1)
-graphonSpectralClustering <- function(allAdj, nbClusters, sig=.1, nbCores=detectCores()){
+graphonSpectralClustering <- function(allAdj, nbClusters, sig=.1, nbCores=1){
   M <- length(allAdj)
   message("initialization of individual SBMs...\n")
   listTheta <- fitSimpleSBM(allAdj, nbCores = nbCores, outCountStat = FALSE)

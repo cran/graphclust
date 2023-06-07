@@ -7,7 +7,7 @@
 fitSBMcollection(
   allAdj,
   hyperParam = list(alpha = 0.5, eta = 0.5, zeta = 0.5, lambda = 0.5),
-  nbCores = detectCores()
+  nbCores = 1
 )
 }
 \arguments{
@@ -15,7 +15,7 @@ fitSBMcollection(
 
 \item{hyperParam}{hyperparameters of prior distributions}
 
-\item{nbCores}{number of cores for parallelization. Default: detectCores().}
+\item{nbCores}{number of cores for parallelization}
 }
 \value{
 list with the following fields:

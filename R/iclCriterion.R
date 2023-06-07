@@ -71,21 +71,28 @@ iclCriterionSBMmix <- function(countStat, graphGroups, hyperParam){
 #' aggregations
 #' @noRd
 getAllDeltaICL <- function(allAdj, countStat, hyperParam){
-  M <- length(allAdj)
-  matDeltaICL <- matrix(NA, M, M)
-  colnames(matDeltaICL) <- rownames(matDeltaICL) <- 1:M
-  for (ind1 in 1:(M-1)){
-    for (ind2 in (ind1+1):M){
-      resMerge <- merge2graphGroups(
-        allAdj[ind1], extractCountStat(countStat, ind1),
-        allAdj[ind2], extractCountStat(countStat, ind2),
-        hyperParam)
-
-      matDeltaICL[ind1, ind2] <- iclIncreaseCrit(resMerge, countStat, ind1, ind2, hyperParam)
+    M <- length(allAdj)
+    # constPenalty <- globalPenalty(hyperParam$lambda), M, M)
+    # m1 <- m2 <- 1
+    diffU_partial <-  lgamma(hyperParam$lambda + 2) -
+      lgamma(hyperParam$lambda + 1) - lgamma(hyperParam$lambda - 1)
+    iclPerNetwork <- sapply(1:M, function(m) iclCriterionSBMiid(extractCountStat(countStat, m), hyperParam))
+    matDeltaICL <- matrix(NA, M, M)
+    colnames(matDeltaICL) <- rownames(matDeltaICL) <- 1:M
+    for (ind1 in 1:(M-1)){
+      for (ind2 in (ind1+1):M){
+        resMerge <- merge2graphGroups(
+          allAdj[ind1], extractCountStat(countStat, ind1),
+          allAdj[ind2], extractCountStat(countStat, ind2),
+          hyperParam)
+        iclNew <- iclCriterionSBMiid(mergeCountStat(resMerge$countStat1, resMerge$countStat2), hyperParam)
+        iclClust1 <- iclPerNetwork[ind1] # iclCriterionSBMiid(extractCountStat(countStat, ind1), hyperParam)
+        iclClust2 <- iclPerNetwork[ind2] # iclCriterionSBMiid(extractCountStat(countStat, ind2), hyperParam)
+        matDeltaICL[ind1, ind2] <- iclNew - iclClust1 - iclClust2 + diffU_partial
+      }
     }
+    return(matDeltaICL)
   }
-  return(matDeltaICL)
-}
 
 
 
